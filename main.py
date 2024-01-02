@@ -2,34 +2,39 @@ import os
 import json
 import shutil
 
-train_folder = r'D:\Facultate\UTCN\An IV\Semestrul 1\Sisteme de recunoastere a formelor\Proiect\script\train'
+def assign_categories_and_move(folder_path, json_path, output_folder):
+    # Citirea informațiilor din fișierul JSON
+    with open(json_path, 'r') as json_file:
+        data = json.load(json_file)
 
-# Load the JSON data
-json_file_path = os.path.join(train_folder, '_annotations.coco.json')
-with open(json_file_path) as json_file:
-    data = json.load(json_file)
+    # Crearea unui dicționar pentru a asocia id-urile de imagini cu categoriile date
+    image_categories = {img['id']: data['categories'][ann['category_id']]['name']
+                        for img in data.get('images', [])
+                        for ann in data.get('annotations', []) if ann['image_id'] == img['id']}
 
-# Get the list of categories and their IDs
-categories = {category['id']: category['name'] for category in data['categories']}
+    # Crearea unor subfoldere corespunzătoare categoriilor date
+    for category in set(image_categories.values()):
+        category_folder = os.path.join(output_folder, category)
+        os.makedirs(category_folder, exist_ok=True)
 
-# Create folders for each category
-output_folder = 'output_folder'
-for category_id, category_name in categories.items():
-    folder_path = os.path.join(output_folder, category_name)
-    os.makedirs(folder_path, exist_ok=True)
+    # Mutarea imaginilor în subfolderele corespunzătoare
+    for image in data.get('images', []):
+        image_id = image['id']
+        filename = image['file_name']
+        filepath = os.path.join(folder_path, filename)
 
-# Move images to their corresponding folders
-for image_info in data['images']:
-    image_id = image_info['id']
+        # Verificare dacă fișierul este imagine și este prezent în dicționarul de categorii
+        if os.path.isfile(filepath) and image_id in image_categories:
+            category = image_categories[image_id]
+            destination_folder = os.path.join(output_folder, category)
+            destination_path = os.path.join(destination_folder, filename)
 
-    # Find the category for the image filename, default to None if not found
-    category_id = next((category['id'] for category in data['categories'] if category['name'].lower() in image_info['file_name'].lower()), None)
+            # Mutarea fișierului în subfolderul corespunzător
+            shutil.move(filepath, destination_path)
+            print(f'{filename}: {category}')
 
-    # If a matching category is found, proceed with moving the file
-    if category_id is not None:
-        category_name = categories[category_id]
-        source_path = os.path.join(train_folder, image_info['file_name'])
-        destination_path = os.path.join(output_folder, category_name, image_info['file_name'])
-        shutil.copy(source_path, destination_path)
-
-print("Images organized into folders based on categories.")
+if __name__ == "__main__":
+    folder_path = r"D:\Facultate\UTCN\An IV\Semestrul 1\Sisteme de recunoastere a formelor\Proiect\script\train"
+    json_path = r"D:\Facultate\UTCN\An IV\Semestrul 1\Sisteme de recunoastere a formelor\Proiect\script\train\_annotations.coco.json"
+    output_folder = r"D:\Facultate\UTCN\An IV\Semestrul 1\Sisteme de recunoastere a formelor\Proiect\script\output_folder"
+    assign_categories_and_move(folder_path, json_path, output_folder)
