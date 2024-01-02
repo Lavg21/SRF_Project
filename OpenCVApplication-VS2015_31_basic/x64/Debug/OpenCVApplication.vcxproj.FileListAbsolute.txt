@@ -1,0 +1,2 @@
+D:\Facultate\UTCN\An IV\Semestrul 1\Sisteme de recunoastere a formelor\Project\SRF_Project\OpenCVApplication-VS2015_31_basic\x64\Debug\OpenCVApplication.exe
+D:\Facultate\UTCN\An IV\Semestrul 1\Sisteme de recunoastere a formelor\Project\SRF_Project\OpenCVApplication-VS2015_31_basic\x64\Debug\OpenCVApplication.pdb
