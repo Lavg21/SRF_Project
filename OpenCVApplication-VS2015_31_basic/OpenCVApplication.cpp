@@ -3,6 +3,10 @@
 
 #include "stdafx.h"
 #include "common.h"
+#include <iostream>
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <algorithm>
 
 
 void testOpenImage()
@@ -725,7 +729,7 @@ int knnClassifier(std::vector<float> hist, Mat_<float> X, Mat_<uchar> Y, int k, 
 }*/
 
 void knn() {
-	const int nrclasses = 5; // Update with the number of car categories: coupe, pickup, sedan, suv, van
+	const int nrclasses = 5; 
 	char classes[nrclasses][10] = { "coupe", "pickup", "sedan", "suv", "van" };
 
 	Mat_<float> X(500, 256 * 3, CV_64FC1);
@@ -736,7 +740,7 @@ void knn() {
 	for (int c = 0; c < nrclasses; c++) {
 		int fileNr = 0;
 		while (1) {
-			sprintf(fname, "D:/Facultate/UTCN/An IV/Semestrul 1/Sisteme de recunoastere a formelor/Project/SRF_Project/train/%s/%06d.jpg", classes[c], fileNr++);
+			sprintf(fname, "dataset/train/%s/%06d.jpg", classes[c], fileNr++);
 			printf("%s\n", fname);
 			Mat img = imread(fname);
 			if (img.cols == 0) break;
@@ -762,7 +766,7 @@ void knn() {
 		fileNr = 0;
 
 		while (1) {
-			sprintf(fnameTest, "D:/Facultate/UTCN/An IV/Semestrul 1/Sisteme de recunoastere a formelor/Project/SRF_Project/test/%s/%06d.jpg", classes[c], fileNr++);
+			sprintf(fnameTest, "dataset/test/%s/%06d.jpg", classes[c], fileNr++);
 			printf("%s\n", fnameTest);
 			Mat img = imread(fnameTest);
 			if (img.cols == 0) break;
@@ -784,8 +788,7 @@ void knn() {
 
 	float acc = (100 * correctlyPredicted) / totalPredicted;
 
-	std::cout << "Accuracy: " << acc << "%" << std::endl;
-
+	std::cout << acc << "%";
 	while (1);
 }
 
