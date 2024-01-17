@@ -7,6 +7,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <algorithm>
+#include <limits>
 
 
 void testOpenImage()
@@ -595,75 +596,6 @@ Mat initKMeans() {
 	}
 }
 
-std::vector<float> calcHist(Mat_<Vec3b> img, int m) {
-
-	std::vector<float> hist;
-	int binSize = 256 / m;
-
-	for (int i = 0; i < m * 3; i++) {
-		hist.push_back(0);
-	}
-
-	for (int i = 0; i < img.rows; i++) {
-		for (int j = 0; j < img.cols; j++) {
-
-			Vec3b pixel = img(i, j);
-			for (int k = 0; k < m; k++) {
-				for (int l = 0; l < 2; l++) {
-					if (pixel[l] >= k * m && pixel[l] < m * (k + 1)) {
-						hist.at(pixel[l] + m * l)++;
-					}
-				}
-			}
-		}
-	}
-
-	int area = img.rows * img.cols;
-	for (int i = 0; i < m * 3; i++) {
-		hist.at(i) /= area;
-	}
-
-	return hist;
-}
-
-int knnClassifier(std::vector<float> hist, Mat_<float> X, Mat_<uchar> Y, int k, int nbClasses) {
-
-	std::vector<std::tuple<double, int>> v;
-	std::vector<int> voting;
-
-	for (int i = 0; i < nbClasses; i++) {
-		voting.push_back(0);
-	}
-
-	for (int i = 0; i < X.rows; i++) {
-		float distance = 0;
-		for (int j = 0; j < X.cols; j++) {
-			//distance += pow(hist.at(j) - X(i, j), 2);
-			distance += abs(hist.at(j) - X(i, j));
-		}
-		//v.push_back({ sqrt(distance), Y(i) });
-		v.push_back({ distance, Y(i) });
-	}
-
-	std::sort(v.begin(), v.end());
-
-	for (int i = 0; i < k; i++) {
-		int index = std::get<1>(v.at(i));
-		voting.at(index)++;
-	}
-
-	int maxim = 0, predictedClass = 0;
-	for (int i = 0; i < voting.size(); i++) {
-		if (voting.at(i) > maxim) {
-			maxim = voting.at(i);
-			predictedClass = i;
-		}
-	}
-
-	return predictedClass;
-
-}
-
 /*void knn() {
 	const int nrclasses = 6;
 	char classes[nrclasses][10] = { "beach", "city", "desert", "forest", "landscape", "snow" };
@@ -728,11 +660,135 @@ int knnClassifier(std::vector<float> hist, Mat_<float> X, Mat_<uchar> Y, int k, 
 	while (1);
 }*/
 
+// Function to calculate evaluation metrics
+/*void calculateMetrics(const Mat_<float>& X, const Mat_<uchar>& Y, int k, int nbClasses,
+	int& totalPredicted, int& correctlyPredicted, std::vector<int>& classCounts) {
+	totalPredicted = 0;
+	correctlyPredicted = 0;
+	classCounts.assign(nbClasses, 0);
+
+	for (int i = 0; i < X.rows; i++) {
+		std::vector<float> hist = calcHist(X.row(i), 256);
+		int predictedClass = knnClassifier(hist, X, Y, k, nbClasses);
+		totalPredicted++;
+
+		if (predictedClass == Y(i)) {
+			correctlyPredicted++;
+		}
+
+		classCounts[Y(i)]++;
+	}
+}*/
+
+/*
+std::vector<float> calcHist(Mat_<Vec3b> img, int m) {
+
+	std::vector<float> hist;
+	int binSize = 256 / m;
+
+	for (int i = 0; i < m * 3; i++) {
+		hist.push_back(0);
+	}
+
+	for (int i = 0; i < img.rows; i++) {
+		for (int j = 0; j < img.cols; j++) {
+
+			Vec3b pixel = img(i, j);
+			for (int k = 0; k < m; k++) {
+				for (int l = 0; l < 2; l++) {
+					if (pixel[l] >= k * m && pixel[l] < m * (k + 1)) {
+						hist.at(pixel[l] + m * l)++;
+					}
+				}
+			}
+		}
+	}
+
+	int area = img.rows * img.cols;
+	for (int i = 0; i < m * 3; i++) {
+		hist.at(i) /= area;
+	}
+
+	return hist;
+}*/
+
+std::vector<float> calcHist(Mat_<Vec3b> img, int m, bool useHSV) {
+	std::vector<float> hist;
+	int binSize = 256 / m;
+
+	for (int i = 0; i < m * 3; i++) {
+		hist.push_back(0);
+	}
+
+	if (useHSV) {
+		cvtColor(img, img, CV_BGR2HSV);
+	}
+
+	for (int i = 0; i < img.rows; i++) {
+		for (int j = 0; j < img.cols; j++) {
+
+			Vec3b pixel = img(i, j);
+			for (int k = 0; k < m; k++) {
+				for (int l = 0; l < 2; l++) {
+					if (pixel[l] >= k * m && pixel[l] < m * (k + 1)) {
+						hist.at(pixel[l] + m * l)++;
+					}
+				}
+			}
+		}
+	}
+
+	int area = img.rows * img.cols;
+	for (int i = 0; i < m * 3; i++) {
+		hist.at(i) /= area;
+	}
+
+	return hist;
+}
+
+int knnClassifier(std::vector<float> hist, Mat_<float> X, Mat_<uchar> Y, int k, int nbClasses) {
+
+	std::vector<std::tuple<double, int>> v;
+	std::vector<int> voting;
+
+	for (int i = 0; i < nbClasses; i++) {
+		voting.push_back(0);
+	}
+
+	for (int i = 0; i < X.rows; i++) {
+		float distance = 0;
+		for (int j = 0; j < X.cols; j++) {
+			//distance += pow(hist.at(j) - X(i, j), 2);
+			distance += abs(hist.at(j) - X(i, j));
+		}
+		//v.push_back({ sqrt(distance), Y(i) });
+		v.push_back({ distance, Y(i) });
+	}
+
+	std::sort(v.begin(), v.end());
+
+	for (int i = 0; i < k; i++) {
+		int index = std::get<1>(v.at(i));
+		voting.at(index)++;
+	}
+
+	int maxim = 0, predictedClass = 0;
+	for (int i = 0; i < voting.size(); i++) {
+		if (voting.at(i) > maxim) {
+			maxim = voting.at(i);
+			predictedClass = i;
+		}
+	}
+
+	return predictedClass;
+
+}
+
 void knn() {
 	const int nrclasses = 5; 
 	char classes[nrclasses][10] = { "coupe", "pickup", "sedan", "suv", "van" };
 
-	Mat_<float> X(500, 256 * 3, CV_64FC1);
+	Mat_<float> X(500, 256 * 6, CV_64FC1);
 	Mat_<int> Y(500, 1, CV_8UC1);
 
 	char fname[MAX_PATH];
@@ -745,10 +801,21 @@ void knn() {
 			Mat img = imread(fname);
 			if (img.cols == 0) break;
 
-			std::vector<float> hist = calcHist(img, 256);
+			//std::vector<float> hist = calcHist(img, 256); 
 
-			for (int d = 0; d < hist.size(); d++)
-				X(rowX, d) = hist.at(d);
+			std::vector<float> histRGB = calcHist(img, 256, false); // RGB
+			std::vector<float> histHSV = calcHist(img, 256, true); // HSV
+
+			std::vector<float> combinedFeatures;
+			combinedFeatures.insert(combinedFeatures.end(), histRGB.begin(), histRGB.end());
+			combinedFeatures.insert(combinedFeatures.end(), histHSV.begin(), histHSV.end());
+
+			/*for (int d = 0; d < hist.size(); d++)
+				X(rowX, d) = hist.at(d);*/
+
+			for (int d = 0; d < combinedFeatures.size(); d++)
+				X(rowX, d) = combinedFeatures.at(d);
+
 			Y(rowX) = c;
 			rowX++;
 		}
@@ -776,10 +843,19 @@ void knn() {
 				break;
 			}
 
-			std::vector<float> hist = calcHist(img, 256);
+			//std::vector<float> hist = calcHist(img, 256);
+			std::vector<float> histRGB = calcHist(img, 256, false); // RGB
+			std::vector<float> histHSV = calcHist(img, 256, true); // HSV
 
-			int predictedClass = knnClassifier(hist, X, Y, k, nrclasses);
+			std::vector<float> combinedFeatures;
+			combinedFeatures.insert(combinedFeatures.end(), histRGB.begin(), histRGB.end());
+			combinedFeatures.insert(combinedFeatures.end(), histHSV.begin(), histHSV.end());
+
+			//int predictedClass = knnClassifier(hist, X, Y, k, nrclasses);
+			int predictedClass = knnClassifier(combinedFeatures, X, Y, k, nrclasses);
+
 			totalPredicted++;
+
 			if (predictedClass == c) {
 				correctlyPredicted++;
 			}
@@ -788,7 +864,26 @@ void knn() {
 
 	float acc = (100 * correctlyPredicted) / totalPredicted;
 
-	std::cout << acc << "%";
+	std::cout <<"Accuracy" << acc << "%"<<std::endl;
+	std::cout <<"Correctly Predicted" << correctlyPredicted << "%"<<std::endl;
+
+	/*char fname_user[MAX_PATH];
+	while (openFileDlg(fname)) {
+		cv::Mat img = cv::imread(fname_user);
+		if (img.empty()) {
+			std::cerr << "Error: Could not open image." << std::endl;
+			return;
+		}
+
+		std::vector<float> hist = calcHist(img, 256);
+		int predictedClass = knnClassifier(hist, X, Y, k, nrclasses);
+
+		std::cout << "Predicted Class: " << classes[predictedClass] << std::endl;
+
+		cv::imshow("User-provided Image", img);
+		waitKey(1);
+	}*/
+
 	while (1);
 }
 
